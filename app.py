@@ -1,10 +1,9 @@
 from flask import Flask, request
 from openai import OpenAI
 import os
+from config import *
 
 app = Flask(__name__)
-OPEN_API_KEY = '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'
-ASSISTANT_ID = 'asst_U0gqlPAabIA39QKcQNxhYtD3' 
 
 @app.route('/to_chatgpt', methods=['POST'])
 def to_chatgpt():
@@ -24,7 +23,7 @@ def to_chatgpt():
     gpt_response = send_to_gpt(custom_prompt)
 
     # Send the GPT response back to Voiceflow
-    return gpt_response
+    return {"response" : gpt_response}
 
 def send_to_gpt(prompt):
     
@@ -62,11 +61,6 @@ def send_to_gpt(prompt):
     )
     response = assistant_reply.data[0].content[0].text.value
     return response
-
-def send_to_voiceflow(gpt_response):
-    # Code to format and send the response back to Voiceflow
-    # This depends on how Voiceflow expects to receive the data
-    pass  # Replace with actual implementation
 
 if __name__ == '__main__':
     app.run(port=5000)
