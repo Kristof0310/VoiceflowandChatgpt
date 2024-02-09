@@ -1,37 +1,67 @@
 from flask import Flask, request
-import requests
+from openai import OpenAI
+import os
 
 app = Flask(__name__)
+OPEN_API_KEY = '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'
+ASSISTANT_ID = 'asst_U0gqlPAabIA39QKcQNxhYtD3' 
 
-# Endpoint to receive data from Voiceflow
 @app.route('/to_chatgpt', methods=['POST'])
 def to_chatgpt():
-    data = request.json
-    user_responses = [data['field1'], data['field2'], data['field3'], data['field4']]
+    video_topic = request.form['video_topic']
+    video_audience = request.form['video_audience']
+    # Create custom prompt using video_topic and video_audience
+    custom_prompt = f"""
+          Write me a short explainer video script for short form social media content that is less than 150 words. make the tone exciting and engaging. 
+          Start script with a short hook that highlights who should watch this video and why. 
+          Finish script with a very short call to action at the end to like and follow. 
+          include latest stats and news if you can. Only provide the script prose. Focus script around the audience and topic delimited by “:”
+          Video Audience: {video_audience}
+          Video Topic: {video_topic}
+        """
 
-    # Create Custom Script
-    custom_prompt = f"Your custom prompt here with variables: {user_responses[0]}, {user_responses[1]}, {user_responses[2]}, {user_responses[3]}"
-
-    # Send the prompt to GPT API
+    # Send the prompt to GPT API and get response to resend to voiceflow
     gpt_response = send_to_gpt(custom_prompt)
 
     # Send the GPT response back to Voiceflow
-    return send_to_voiceflow(gpt_response)
+    return gpt_response
 
 def send_to_gpt(prompt):
-    # Replace with your actual GPT API endpoint and key
-    gpt_api_endpoint = "https://api.openai.com/v1/engines/davinci-codex/completions"
-    headers = {
-        "Authorization": "Bearer YOUR_GPT_API_KEY",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "prompt": prompt,
-        "max_tokens": 150  # Adjust as needed
-    }
+    
+    client = OpenAI(api_key=OPEN_API_KEY)
+    
+    #create a thread
+    thread = client.beta.threads.create()
 
-    response = requests.post(gpt_api_endpoint, json=payload, headers=headers)
-    return response.json()
+    message = client.beta.threads.messages.create(
+        thread_id = thread.id,
+        role = "user",
+        content = prompt
+    )
+
+    #Create the run, passing in the thread and the assitant
+    run = client.beta.threads.runs.create(
+        thread_id = thread.id,
+        assistant_id = ASSISTANT_ID
+    ) 
+
+    #Periodically retried the run until completed
+    while run.status != "completed":
+        keep_retrieving_run = client.beta.threads.runs.retrieve(
+            thread_id=thread.id,
+            run_id=run.id
+        )
+        print(f"Run status: {keep_retrieving_run.status}")
+
+        if keep_retrieving_run.status == "completed":
+            print("\n")
+            break
+
+    assistant_reply = client.beta.threads.messages.list(
+        thread_id=thread.id
+    )
+    response = assistant_reply.data[0].content[0].text.value
+    return response
 
 def send_to_voiceflow(gpt_response):
     # Code to format and send the response back to Voiceflow
