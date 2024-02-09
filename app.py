@@ -9,6 +9,7 @@ app = Flask(__name__)
 def to_chatgpt():
     video_topic = request.form['video_topic']
     video_audience = request.form['video_audience']
+
     # Create custom prompt using video_topic and video_audience
     custom_prompt = f"""
           Write me a short explainer video script for short form social media content that is less than 150 words. make the tone exciting and engaging. 
@@ -19,7 +20,7 @@ def to_chatgpt():
           Video Topic: {video_topic}
         """
 
-    # Send the prompt to GPT API and get response to resend to voiceflow
+    # Send the prompt to Assistant API and get response to resend to voiceflow
     gpt_response = send_to_gpt(custom_prompt)
 
     # Send the GPT response back to Voiceflow
@@ -50,15 +51,14 @@ def send_to_gpt(prompt):
             thread_id=thread.id,
             run_id=run.id
         )
-        print(f"Run status: {keep_retrieving_run.status}")
 
         if keep_retrieving_run.status == "completed":
-            print("\n")
             break
 
     assistant_reply = client.beta.threads.messages.list(
         thread_id=thread.id
     )
+    
     response = assistant_reply.data[0].content[0].text.value
     return response
 
