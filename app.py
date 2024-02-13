@@ -62,5 +62,9 @@ def send_to_gpt(prompt):
     response = assistant_reply.data[0].content[0].text.value
     return response
 
+@app.route('/')
+def hello_world():
+    return 'Hello World'
+
 if __name__ == '__main__':
     app.run(port=5000)
