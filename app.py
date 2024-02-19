@@ -28,7 +28,6 @@ def to_chatgpt():
         """
 
     video_research = model.generate_content(gemini_prompt)
-    print(video_research.text)
 
     # Create custom prompt using video_topic and video_audience
     custom_prompt = f"""
@@ -69,7 +68,7 @@ def send_to_gpt(prompt):
 
     #Periodically retried the run until completed
     while run.status != "completed":
-        print(run.status)
+       
         keep_retrieving_run = client.beta.threads.runs.retrieve(
             thread_id=thread.id,
             run_id=run.id
