@@ -1,5 +1,6 @@
 from flask import Flask, request
 from openai import OpenAI
+import google.generativeai as genai
 import os
 from config import *
 
@@ -9,15 +10,36 @@ app = Flask(__name__)
 def to_chatgpt():
     video_topic = request.form['video_topic']
     video_audience = request.form['video_audience']
+    script_tone = request.form['script_tone']
+    city_market = request.form['city_market']
+
+    #Call Gemini and get background
+    genai.configure(api_key = GEMINY_API_KEY)
+    model = genai.GenerativeModel('gemini-pro')
+    
+    gemini_prompt = f"""
+            Browse the internet, research a topic, and produce fact-based results. 
+            Provide stats, data, and news. Limit summary to 100 words. 
+            Consider the relevance of the info you find to the video audience. 
+            Focus script around the audience and topic delimited by ":"
+
+            The audience will be: {video_audience}
+            The topic will be: {video_topic}
+        """
+
+    video_research = model.generate_content(gemini_prompt)
+    print(video_research.text)
 
     # Create custom prompt using video_topic and video_audience
     custom_prompt = f"""
-          Write me a short explainer video script for short form social media content that is less than 150 words. make the tone exciting and engaging. 
-          Start script with a short hook that highlights who should watch this video and why. 
-          Finish script with a very short call to action at the end to like and follow. 
-          include latest stats and news if you can. Only provide the script prose. Focus script around the audience and topic delimited by “:”
-          Video Audience: {video_audience}
-          Video Topic: {video_topic}
+            Write me a short explainer video script for short form social media content that is less than 150 words in a {script_tone} tone. 
+            Start script with a short hook that highlights who should watch this video and why. Finish script with a very short call to action at the end to like and follow. 
+            include stats if you can. Only provide the script prose. Focus script around the audience and topic and enhance the script with information from some background research. 
+            These will all be delimited by ":"
+
+            Your audience will be: {video_audience}
+            The topic will be: {video_topic} {city_market}
+            Background research: {video_research}
         """
 
     # Send the prompt to Assistant API and get response to resend to voiceflow
@@ -47,6 +69,7 @@ def send_to_gpt(prompt):
 
     #Periodically retried the run until completed
     while run.status != "completed":
+        print(run.status)
         keep_retrieving_run = client.beta.threads.runs.retrieve(
             thread_id=thread.id,
             run_id=run.id
@@ -55,6 +78,7 @@ def send_to_gpt(prompt):
         if keep_retrieving_run.status == "completed":
             break
 
+
     assistant_reply = client.beta.threads.messages.list(
         thread_id=thread.id
     )
@@ -62,9 +86,6 @@ def send_to_gpt(prompt):
     response = assistant_reply.data[0].content[0].text.value
     return response
 
-@app.route('/')
-def hello_world():
-    return 'Hello World'
 
 if __name__ == '__main__':
     app.run(port=5000)
