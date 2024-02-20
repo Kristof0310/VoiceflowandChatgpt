@@ -29,9 +29,8 @@ def to_chatgpt():
 
     response = model.generate_content(gemini_prompt)
     video_research = response.text
-    print(video_research)
 
-    # Create custom prompt using video_topic and video_audience
+    # Create custom prompt
     custom_prompt = f"""
             Write me a short explainer video script for short form social media content that is less than 150 words in a {script_tone} tone. 
             Start script with a short hook that highlights who should watch this video and why. Finish script with a very short call to action at the end to like and follow. 
