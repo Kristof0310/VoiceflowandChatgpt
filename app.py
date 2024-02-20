@@ -27,7 +27,9 @@ def to_chatgpt():
             The topic will be: {video_topic}
         """
 
-    video_research = model.generate_content(gemini_prompt)
+    response = model.generate_content(gemini_prompt)
+    video_research = response.text
+    print(video_research)
 
     # Create custom prompt using video_topic and video_audience
     custom_prompt = f"""
@@ -40,7 +42,7 @@ def to_chatgpt():
             The topic will be: {video_topic} {city_market}
             Background research: {video_research}
         """
-
+    
     # Send the prompt to Assistant API and get response to resend to voiceflow
     gpt_response = send_to_gpt(custom_prompt)
 
